@@ -13,13 +13,13 @@ function readAppJson(projectRoot: string): any | null {
   return null;
 }
 
-export interface AndroidConfig {
+export interface DetectedAndroidInfo {
   packageName: string | null;
   versionCode: string | null;
   versionName: string | null;
 }
 
-export function detectAndroidConfig(projectRoot: string): AndroidConfig {
+export function detectAndroidConfig(projectRoot: string): DetectedAndroidInfo {
   // 1. Try app.json first (source of truth for RN/Expo)
   const appJson = readAppJson(projectRoot);
   const appJsonPackage = appJson?.android?.package ?? null;

@@ -1,4 +1,4 @@
-import { ascFetch } from "./apple-auth.js";
+import { ascFetch } from "./auth.js";
 
 export interface BundleIdInfo {
   id: string;

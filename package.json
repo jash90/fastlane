@@ -17,8 +17,7 @@
     "fs-extra": "^11.2.0",
     "inquirer": "^9.2.15",
     "jsonwebtoken": "^9.0.2",
-    "ora": "^8.0.1",
-    "node-fetch": "^3.3.2"
+    "ora": "^8.0.1"
   },
   "devDependencies": {
     "@types/fs-extra": "^11.0.4",
