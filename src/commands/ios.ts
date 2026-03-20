@@ -11,6 +11,9 @@ import { generateIosFiles } from "../generator/ios.js";
 import { generateEnvFile } from "../generator/env.js";
 import { findP8Files } from "../config/p8.js";
 import { loadCredentials, saveCredentials } from "../config/credentials-store.js";
+import { runBundleIdCommand } from "./bundle-id.js";
+import { runCertsCommand } from "./certs.js";
+import { runProvisionCommand } from "./provision.js";
 
 export interface IosFlowContext {
   projectRoot: string;
@@ -253,6 +256,20 @@ export async function runIosFlow(ctx: IosFlowContext): Promise<void> {
           },
         ]);
         bundleIdFromApple = selectedBundleId;
+      }
+
+      // ── Provisioning setup (optional) ─────────────────────────────────
+      const { setupProvisioning } = await inquirer.prompt([{
+        type: "confirm",
+        name: "setupProvisioning",
+        message: "Set up certificates and provisioning profiles now?",
+        default: false,
+      }]);
+
+      if (setupProvisioning) {
+        await runBundleIdCommand({ token, bundleId: bundleIdFromApple, interactive: true });
+        const certResult = await runCertsCommand({ token, interactive: true });
+        await runProvisionCommand({ token, bundleId: bundleIdFromApple, certificateId: certResult.certificateId, interactive: true });
       }
 
       // ── 6. Match config ──────────────────────────────────────────────────

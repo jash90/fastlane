@@ -71,6 +71,42 @@ export function detectXcodeProject(projectRoot: string): string | null {
   }
 }
 
+export function detectCapabilities(projectRoot: string): import("../types.js").CapabilityType[] {
+  const appJson = readAppJson(projectRoot);
+  if (!appJson) return [];
+
+  const caps: import("../types.js").CapabilityType[] = [];
+  const plugins: string[] = (appJson.plugins ?? []).map((p: any) =>
+    typeof p === "string" ? p : Array.isArray(p) ? p[0] : ""
+  );
+  const entitlements = appJson.ios?.entitlements ?? {};
+
+  if (
+    plugins.includes("expo-notifications") ||
+    plugins.includes("@react-native-firebase/messaging")
+  ) {
+    caps.push("PUSH_NOTIFICATIONS");
+  }
+
+  if (plugins.includes("expo-apple-authentication")) {
+    caps.push("APPLE_ID_AUTH");
+  }
+
+  if (
+    plugins.includes("expo-linking") ||
+    plugins.includes("react-native-branch") ||
+    entitlements["com.apple.developer.associated-domains"]
+  ) {
+    caps.push("ASSOCIATED_DOMAINS");
+  }
+
+  if (entitlements["com.apple.developer.in-app-payments"]) {
+    caps.push("IN_APP_PURCHASE");
+  }
+
+  return caps;
+}
+
 export function detectAppName(projectRoot: string): string | null {
   try {
     const pkgPath = path.join(projectRoot, "package.json");

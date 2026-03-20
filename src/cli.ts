@@ -6,6 +6,94 @@ import { detectAndroidConfig, detectIosBundleId, detectAppName, detectXcodeProje
 import { parseEnvFile, parseAppfile } from "./config/parser.js";
 import { runIosFlow } from "./commands/ios.js";
 import { runAndroidFlow } from "./commands/android.js";
+import { runBundleIdCommand } from "./commands/bundle-id.js";
+import { runCertsCommand } from "./commands/certs.js";
+import { runProvisionCommand } from "./commands/provision.js";
+import { runUploadCommand } from "./commands/upload.js";
+import { runReleaseCommand } from "./commands/release.js";
+import type { SubcommandFlags } from "./types.js";
+
+function parseFlags(argv: string[]): SubcommandFlags {
+  const flags: SubcommandFlags = {};
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+    if (arg.startsWith("--")) {
+      const key = arg.slice(2);
+      const next = argv[i + 1];
+      if (next && !next.startsWith("--")) {
+        flags[key] = next;
+        i++;
+      } else {
+        flags[key] = true;
+      }
+    }
+  }
+  return flags;
+}
+
+async function routeSubcommand(subcommand: string, flags: SubcommandFlags): Promise<void> {
+  switch (subcommand) {
+    case "bundle-id":
+      await runBundleIdCommand({
+        bundleId: flags["bundle-id"] as string,
+        name: flags["name"] as string,
+        capabilities: flags["capabilities"] as string,
+      });
+      break;
+
+    case "certs":
+      await runCertsCommand({
+        type: flags["type"] as string,
+        output: flags["output"] as string,
+        force: flags["force"] === true,
+      });
+      break;
+
+    case "provision":
+      await runProvisionCommand({
+        type: flags["type"] as string,
+        bundleId: flags["bundle-id"] as string,
+        certificateId: flags["certificate-id"] as string,
+        output: flags["output"] as string,
+        install: flags["install"] === true || flags["install"] === undefined ? undefined : false,
+      });
+      break;
+
+    case "upload":
+      await runUploadCommand({
+        platform: flags["platform"] as string,
+        aab: flags["aab"] as string,
+        track: flags["track"] as string,
+        jsonKey: flags["json-key"] as string,
+        packageName: flags["package-name"] as string,
+      });
+      break;
+
+    case "release":
+      await runReleaseCommand({
+        platform: flags["platform"] as string,
+        track: flags["track"] as string,
+        rollout: flags["rollout"] as string,
+        jsonKey: flags["json-key"] as string,
+        packageName: flags["package-name"] as string,
+      });
+      break;
+
+    default:
+      console.log(chalk.red(`Unknown subcommand: ${subcommand}`));
+      console.log(chalk.gray("Available: bundle-id, certs, provision, upload, release"));
+      process.exit(1);
+  }
+}
+
+const subcommand = process.argv[2];
+if (subcommand && !subcommand.startsWith("-")) {
+  const flags = parseFlags(process.argv.slice(3));
+  routeSubcommand(subcommand, flags).catch((err) => {
+    console.error(chalk.red("\nError:"), err.message);
+    process.exit(1);
+  });
+} else {
 
 const projectRoot = process.cwd();
 const home = process.env.HOME ?? "";
@@ -108,3 +196,5 @@ main().catch((err) => {
   console.error(chalk.red("\nError:"), err.message);
   process.exit(1);
 });
+
+} // end subcommand routing else

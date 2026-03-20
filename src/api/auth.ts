@@ -22,12 +22,19 @@ export function generateJWT(creds: AppleCredentials): string {
   });
 }
 
-export async function ascFetch<T>(token: string, endpoint: string): Promise<T> {
+export interface AscFetchOptions {
+  method?: "GET" | "POST" | "DELETE" | "PATCH";
+  body?: unknown;
+}
+
+export async function ascFetch<T>(token: string, endpoint: string, options?: AscFetchOptions): Promise<T> {
   const res = await fetch(`https://api.appstoreconnect.apple.com/v1/${endpoint}`, {
+    method: options?.method ?? "GET",
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     },
+    body: options?.body ? JSON.stringify(options.body) : undefined,
   });
 
   if (!res.ok) {
