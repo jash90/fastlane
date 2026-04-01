@@ -3,37 +3,47 @@ import path from "path";
 import type { IosConfig } from "../types.js";
 
 export async function generateIosFiles(projectRoot: string, config: IosConfig) {
-  const fastlaneDir = path.join(projectRoot, "ios", "fastlane");
+  const fastlaneDir = path.join(projectRoot, "fastlane");
   await fs.ensureDir(fastlaneDir);
 
-  // Appfile
-  await fs.writeFile(
-    path.join(fastlaneDir, "Appfile"),
-    `app_identifier("${config.bundleId}")
-apple_id("${config.appleId}")
-team_id("${config.teamId}")
-itc_team_id("${config.itcTeamId}")
-`
-  );
+  // Appfile — reads values from ENV
+  const appfilePath = path.join(fastlaneDir, "Appfile");
+  const existingAppfile = fs.existsSync(appfilePath) ? await fs.readFile(appfilePath, "utf8") : "";
 
-  // Matchfile
+  const iosAppfileBlock = `app_identifier(ENV["APP_IDENTIFIER"])
+apple_id(ENV["APPLE_ID"])
+team_id(ENV["TEAM_ID"])
+itc_team_id(ENV["ITC_TEAM_ID"])
+`;
+
+  // Keep android lines if they exist
+  const androidLines = existingAppfile.split("\n").filter(
+    (l) => l.startsWith("json_key_file(") || l.startsWith("package_name(")
+  );
+  const appfileContent = androidLines.length > 0
+    ? iosAppfileBlock + "\n" + androidLines.join("\n") + "\n"
+    : iosAppfileBlock;
+
+  await fs.writeFile(appfilePath, appfileContent);
+
+  // Matchfile — reads values from ENV
   await fs.writeFile(
     path.join(fastlaneDir, "Matchfile"),
-    `git_url("${config.matchGitUrl}")
+    `git_url(ENV["MATCH_GIT_URL"])
 storage_mode("git")
 type("appstore")
-app_identifier(["${config.bundleId}"])
+app_identifier([ENV["APP_IDENTIFIER"]])
 `
   );
 
   const scheme = config.xcodeproj ? config.xcodeproj.replace(".xcodeproj", "") : config.bundleId.split(".").pop();
+  const xcodeprojPath = config.xcodeproj ? `ios/${config.xcodeproj}` : "";
 
-  // Fastfile
-  await fs.writeFile(
-    path.join(fastlaneDir, "Fastfile"),
-    `default_platform(:ios)
+  // Fastfile — merge with existing android platform block
+  const fastfilePath = path.join(fastlaneDir, "Fastfile");
+  const existingFastfile = fs.existsSync(fastfilePath) ? await fs.readFile(fastfilePath, "utf8") : "";
 
-platform :ios do
+  const iosBlock = `platform :ios do
   before_all do
     @api_key = app_store_connect_api_key(
       key_id: ENV["ASC_KEY_ID"],
@@ -51,8 +61,9 @@ platform :ios do
   desc "Build and upload to TestFlight"
   lane :beta do
     match(type: "appstore", readonly: is_ci)
-    increment_build_number(xcodeproj: "${config.xcodeproj}")
+    increment_build_number(xcodeproj: "${xcodeprojPath}")
     build_app(
+      workspace: "ios/${scheme}.xcworkspace",
       scheme: "${scheme}",
       export_method: "app-store"
     )
@@ -60,20 +71,36 @@ platform :ios do
       api_key: @api_key,
       skip_waiting_for_build_processing: true
     )
+    clean_build_artifacts
+    sh("rm -rf ../ios/build")
   end
 
   desc "Build and release to App Store"
   lane :release do
     match(type: "appstore", readonly: is_ci)
-    build_app(export_method: "app-store")
+    build_app(
+      workspace: "ios/${scheme}.xcworkspace",
+      scheme: "${scheme}",
+      export_method: "app-store"
+    )
     upload_to_app_store(
       api_key: @api_key,
       submit_for_review: true,
       automatic_release: false,
       force: true
     )
+    clean_build_artifacts
+    sh("rm -rf ../ios/build")
   end
-end
-`
-  );
+end`;
+
+  // Extract existing android block if present
+  const androidBlockMatch = existingFastfile.match(/platform :android do[\s\S]*?^end/m);
+  const androidBlock = androidBlockMatch ? androidBlockMatch[0] : "";
+
+  const fastfileContent = androidBlock
+    ? iosBlock + "\n\n" + androidBlock + "\n"
+    : iosBlock + "\n";
+
+  await fs.writeFile(fastfilePath, fastfileContent);
 }

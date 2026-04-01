@@ -135,10 +135,12 @@ async function main() {
   const doAndroid = platforms.includes("android");
 
   // ── 3. Load existing .env configurations ────────────────────────────────
-  const existingIosEnv = parseEnvFile(path.join(projectRoot, "ios", "fastlane", ".env"));
-  const existingAndroidEnv = parseEnvFile(path.join(projectRoot, "android", "fastlane", ".env"));
-  const iosAppfile = parseAppfile(path.join(projectRoot, "ios", "fastlane", "Appfile"));
-  const androidAppfile = parseAppfile(path.join(projectRoot, "android", "fastlane", "Appfile"));
+  const existingEnv = parseEnvFile(path.join(projectRoot, "fastlane", ".env"));
+  const existingIosEnv = existingEnv;
+  const existingAndroidEnv = existingEnv;
+  const appfile = parseAppfile(path.join(projectRoot, "fastlane", "Appfile"));
+  const iosAppfile = appfile;
+  const androidAppfile = appfile;
 
   const iosConfigured = !!(existingIosEnv.ASC_KEY_ID && existingIosEnv.ASC_KEY_CONTENT_BASE64);
   const androidConfigured = !!existingAndroidEnv.SUPPLY_JSON_KEY;
@@ -170,25 +172,20 @@ async function main() {
   console.log(chalk.bold.green("\n✅ Configuration complete!\n"));
   console.log(chalk.bold("Generated files:"));
 
+  console.log(chalk.cyan("  fastlane/Appfile"));
+  console.log(chalk.cyan("  fastlane/Fastfile"));
   if (doIos) {
-    console.log(chalk.cyan("  ios/fastlane/Appfile"));
-    console.log(chalk.cyan("  ios/fastlane/Fastfile"));
-    console.log(chalk.cyan("  ios/fastlane/Matchfile"));
-    console.log(chalk.cyan("  ios/fastlane/.env") + chalk.gray("  ← secrets, added to .gitignore"));
+    console.log(chalk.cyan("  fastlane/Matchfile"));
   }
-  if (doAndroid) {
-    console.log(chalk.cyan("  android/fastlane/Appfile"));
-    console.log(chalk.cyan("  android/fastlane/Fastfile"));
-    console.log(chalk.cyan("  android/fastlane/.env") + chalk.gray("  ← secrets, added to .gitignore"));
-  }
+  console.log(chalk.cyan("  fastlane/.env") + chalk.gray("  ← secrets, added to .gitignore"));
 
   console.log(chalk.bold("\n📋 Next steps:"));
   if (doIos || iosConfigured) {
-    console.log("  1. " + chalk.white("cd ios && fastlane certs") + chalk.gray("  ← fetch certificates"));
-    console.log("  2. " + chalk.white("cd ios && fastlane beta") + chalk.gray("  ← upload to TestFlight"));
+    console.log("  1. " + chalk.white("fastlane ios certs") + chalk.gray("  ← fetch certificates"));
+    console.log("  2. " + chalk.white("fastlane ios beta") + chalk.gray("  ← upload to TestFlight"));
   }
   if (doAndroid || androidConfigured) {
-    console.log("  3. " + chalk.white("cd android && fastlane beta") + chalk.gray("  ← upload to Play Store\n"));
+    console.log("  3. " + chalk.white("fastlane android beta") + chalk.gray("  ← upload to Play Store\n"));
   }
 }
 
