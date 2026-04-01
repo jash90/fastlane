@@ -1,11 +1,12 @@
 {
-  "name": "fastlane",
+  "name": "fastlane-init",
   "version": "1.0.0",
   "description": "Interactive CLI to auto-configure Fastlane for React Native projects",
   "type": "module",
   "main": "dist/cli.js",
+  "files": ["dist"],
   "bin": {
-    "fastlane": "./dist/cli.js"
+    "fastlane-init": "./dist/cli.js"
   },
   "scripts": {
     "build": "tsc",
