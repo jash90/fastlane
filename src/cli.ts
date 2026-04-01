@@ -2,7 +2,7 @@
 import inquirer from "inquirer";
 import chalk from "chalk";
 import path from "path";
-import { detectAndroidConfig, detectIosBundleId, detectAppName, detectXcodeProject } from "./config/detect.js";
+import { detectAndroidConfig, detectIosBundleId, detectAppName, detectXcodeProject, detectIosVersion } from "./config/detect.js";
 import { parseEnvFile, parseAppfile } from "./config/parser.js";
 import { runIosFlow } from "./commands/ios.js";
 import { runAndroidFlow } from "./commands/android.js";
@@ -106,15 +106,24 @@ async function main() {
   const androidConfig = detectAndroidConfig(projectRoot);
   const appName = detectAppName(projectRoot);
   const xcodeproj = detectXcodeProject(projectRoot);
+  const iosVersion = detectIosVersion(projectRoot);
 
   if (appName) {
     console.log(chalk.gray(`📦 Project: ${appName}`));
   }
   if (detectedBundleId) {
-    console.log(chalk.gray(`🍎 Bundle ID (detected): ${detectedBundleId}`));
+    console.log(chalk.gray(`🍎 Bundle ID: ${detectedBundleId}`));
+  }
+  if (iosVersion.version) {
+    const build = iosVersion.buildNumber ? ` (${iosVersion.buildNumber})` : "";
+    console.log(chalk.gray(`🍎 Version: ${iosVersion.version}${build}`));
   }
   if (androidConfig.packageName) {
-    console.log(chalk.gray(`🤖 Package Name (detected): ${androidConfig.packageName}`));
+    console.log(chalk.gray(`🤖 Package: ${androidConfig.packageName}`));
+  }
+  if (androidConfig.versionName) {
+    const code = androidConfig.versionCode ? ` (${androidConfig.versionCode})` : "";
+    console.log(chalk.gray(`🤖 Version: ${androidConfig.versionName}${code}`));
   }
   console.log("");
 

@@ -1,6 +1,5 @@
 import fs from "fs";
 import path from "path";
-import { execSync } from "child_process";
 
 function readAppJson(projectRoot: string): any | null {
   try {
@@ -25,17 +24,19 @@ export function detectAndroidConfig(projectRoot: string): DetectedAndroidInfo {
   const appJsonPackage = appJson?.android?.package ?? null;
   if (appJsonPackage) return { packageName: appJsonPackage, versionCode: null, versionName: null };
 
-  // 2. Fallback to build.gradle
-  const buildGradlePath = path.join(projectRoot, "android", "app", "build.gradle");
-  if (fs.existsSync(buildGradlePath)) {
-    const content = fs.readFileSync(buildGradlePath, "utf8");
-    const packageName =
-      content.match(/applicationId\s+["']([^"']+)["']/)?.[1] ??
-      content.match(/namespace\s+["']([^"']+)["']/)?.[1] ??
-      null;
-    const versionCode = content.match(/versionCode\s+(\d+)/)?.[1] ?? null;
-    const versionName = content.match(/versionName\s+["']([^"']+)["']/)?.[1] ?? null;
-    if (packageName) return { packageName, versionCode, versionName };
+  // 2. Fallback to build.gradle / build.gradle.kts
+  for (const filename of ["build.gradle", "build.gradle.kts"]) {
+    const gradlePath = path.join(projectRoot, "android", "app", filename);
+    if (fs.existsSync(gradlePath)) {
+      const content = fs.readFileSync(gradlePath, "utf8");
+      const packageName =
+        content.match(/applicationId\s*[=(]\s*["']([^"']+)["']/)?.[1] ??
+        content.match(/namespace\s*[=(]\s*["']([^"']+)["']/)?.[1] ??
+        null;
+      const versionCode = content.match(/versionCode\s*[=(]\s*(\d+)/)?.[1] ?? null;
+      const versionName = content.match(/versionName\s*[=(]\s*["']([^"']+)["']/)?.[1] ?? null;
+      if (packageName) return { packageName, versionCode, versionName };
+    }
   }
 
   return { packageName: null, versionCode: null, versionName: null };
@@ -49,12 +50,15 @@ export function detectIosBundleId(projectRoot: string): string | null {
 
   // 2. Fallback to pbxproj
   try {
-    const result = execSync(
-      `grep -r "PRODUCT_BUNDLE_IDENTIFIER" "${projectRoot}/ios" --include="*.pbxproj" | head -1`,
-      { encoding: "utf8", stdio: ["pipe", "pipe", "ignore"] }
-    );
-    const match = result.match(/PRODUCT_BUNDLE_IDENTIFIER\s*=\s*([^;]+)/)?.[1]?.trim();
-    if (match) return match;
+    const iosDir = path.join(projectRoot, "ios");
+    if (fs.existsSync(iosDir)) {
+      const pbxprojFiles = readdirRecursive(iosDir).filter((f) => f.endsWith(".pbxproj"));
+      for (const file of pbxprojFiles) {
+        const content = fs.readFileSync(file, "utf8");
+        const match = content.match(/PRODUCT_BUNDLE_IDENTIFIER\s*=\s*([^;]+)/);
+        if (match) return match[1].trim().replace(/"/g, "");
+      }
+    }
   } catch {}
 
   return null;
@@ -186,6 +190,20 @@ function readdirRecursive(dir: string): string[] {
 }
 
 export function detectAppName(projectRoot: string): string | null {
+  // 1. app.json → name or expo.name
+  const appJson = readAppJson(projectRoot);
+  if (appJson?.name) return appJson.name;
+
+  // 2. Info.plist → CFBundleDisplayName or CFBundleName
+  const iosContent = readIosProjectFiles(projectRoot);
+  if (iosContent.infoPlist) {
+    const displayName = extractPlistValue(iosContent.infoPlist, "CFBundleDisplayName");
+    if (displayName) return displayName;
+    const bundleName = extractPlistValue(iosContent.infoPlist, "CFBundleName");
+    if (bundleName) return bundleName;
+  }
+
+  // 3. package.json → name
   try {
     const pkgPath = path.join(projectRoot, "package.json");
     if (fs.existsSync(pkgPath)) {
@@ -194,4 +212,46 @@ export function detectAppName(projectRoot: string): string | null {
     }
   } catch {}
   return null;
+}
+
+export interface DetectedIosVersionInfo {
+  version: string | null;
+  buildNumber: string | null;
+}
+
+export function detectIosVersion(projectRoot: string): DetectedIosVersionInfo {
+  // 1. app.json → expo.version / expo.ios.buildNumber
+  const appJson = readAppJson(projectRoot);
+  if (appJson?.version) {
+    return {
+      version: appJson.version,
+      buildNumber: appJson.ios?.buildNumber ?? null,
+    };
+  }
+
+  // 2. Info.plist → CFBundleShortVersionString
+  const iosContent = readIosProjectFiles(projectRoot);
+  const version = extractPlistValue(iosContent.infoPlist, "CFBundleShortVersionString");
+
+  // 3. pbxproj → CURRENT_PROJECT_VERSION
+  let buildNumber: string | null = null;
+  try {
+    const pbxprojFiles = readdirRecursive(path.join(projectRoot, "ios"))
+      .filter((f) => f.endsWith(".pbxproj"));
+    for (const file of pbxprojFiles) {
+      const content = fs.readFileSync(file, "utf8");
+      const match = content.match(/CURRENT_PROJECT_VERSION\s*=\s*([^;]+)/);
+      if (match) {
+        buildNumber = match[1].trim();
+        break;
+      }
+    }
+  } catch {}
+
+  return { version: version ?? null, buildNumber };
+}
+
+function extractPlistValue(plistContent: string, key: string): string | null {
+  const regex = new RegExp(`<key>${key}</key>\\s*<string>([^<]+)</string>`);
+  return plistContent.match(regex)?.[1] ?? null;
 }
