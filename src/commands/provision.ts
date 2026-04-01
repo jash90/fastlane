@@ -32,11 +32,11 @@ export async function runProvisionCommand(
     token = await resolveToken(projectRoot, home);
   }
 
-  // Profile type
+  // Profile type — default to App Store when bundleId is provided (automated flow)
   let profileType: ProfileType;
   if (options.type === "development") {
     profileType = "IOS_APP_DEVELOPMENT";
-  } else if (options.type === "appstore") {
+  } else if (options.type === "appstore" || options.bundleId) {
     profileType = "IOS_APP_STORE";
   } else if (options.type === "adhoc") {
     profileType = "IOS_APP_ADHOC";
@@ -62,6 +62,16 @@ export async function runProvisionCommand(
   spinner.stop();
 
   const activeProfiles = existingProfiles.filter((p) => p.profileState === "ACTIVE");
+
+  // Auto-select matching profile when bundleId is known
+  if (options.bundleId && activeProfiles.length > 0) {
+    const matching = activeProfiles.find((p) => p.name.includes(options.bundleId!));
+    if (matching) {
+      console.log(chalk.green(`\n✅ Profile auto-selected: ${matching.name}`));
+      await handleProfileDownload(matching, options, projectRoot);
+      return;
+    }
+  }
 
   if (activeProfiles.length > 0 && options.interactive !== false) {
     console.log(chalk.bold(`\nExisting ${profileType} profiles:`));
