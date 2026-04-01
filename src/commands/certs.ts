@@ -134,6 +134,16 @@ export async function runCertsCommand(
 
   console.log(chalk.green(`\nCertificate ready: ${selectedCert.id}`));
 
+  // Cleanup downloaded files
+  try {
+    if (fs.existsSync(cerPath)) fs.unlinkSync(cerPath);
+    if (p12Path && fs.existsSync(p12Path)) fs.unlinkSync(p12Path);
+    // Remove certs dir if empty
+    if (fs.existsSync(outputDir) && fs.readdirSync(outputDir).length === 0) {
+      fs.rmdirSync(outputDir);
+    }
+  } catch {}
+
   return {
     certificateId: selectedCert.id,
     p12Path,
