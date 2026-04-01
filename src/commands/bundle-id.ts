@@ -70,33 +70,35 @@ export async function runBundleIdCommand(options: BundleIdCommandOptions = {}): 
       appleid: "APPLE_ID_AUTH",
       iap: "IN_APP_PURCHASE",
       gamecenter: "GAME_CENTER",
+      icloud: "ICLOUD",
+      appgroups: "APP_GROUPS",
+      maps: "MAPS",
+      siri: "SIRIKIT",
+      wallet: "WALLET",
+      healthkit: "HEALTHKIT",
+      homekit: "HOMEKIT",
+      nfc: "NFC_TAG_READING",
+      vpn: "PERSONAL_VPN",
+      networkext: "NETWORK_EXTENSIONS",
+      wifi: "ACCESS_WIFI_INFORMATION",
+      classkit: "CLASSKIT",
+      autofill: "AUTOFILL_CREDENTIAL_PROVIDER",
+      multipath: "MULTIPATH",
+      hotspot: "HOT_SPOT",
+      dataprotection: "DATA_PROTECTION",
+      interaudio: "INTER_APP_AUDIO",
+      fonts: "FONT_INSTALLATION",
+      wireless: "WIRELESS_ACCESSORY_CONFIGURATION",
     };
     capsToEnable = options.capabilities
       .split(",")
       .map((c) => capMap[c.trim()])
       .filter(Boolean);
-  } else if (options.interactive !== false) {
-    const allCaps: CapabilityType[] = [
-      "PUSH_NOTIFICATIONS",
-      "ASSOCIATED_DOMAINS",
-      "APPLE_ID_AUTH",
-      "IN_APP_PURCHASE",
-      "GAME_CENTER",
-    ];
-
-    const { selectedCaps } = await inquirer.prompt([
-      {
-        type: "checkbox",
-        name: "selectedCaps",
-        message: "Enable capabilities:",
-        choices: allCaps.map((c) => ({
-          name: c.replace(/_/g, " ").toLowerCase(),
-          value: c,
-          checked: detectedCaps.includes(c),
-        })),
-      },
-    ]);
-    capsToEnable = selectedCaps;
+  } else if (detectedCaps.length > 0) {
+    // Auto-enable capabilities detected from entitlements/Info.plist
+    console.log(chalk.green(`\n✅ Detected capabilities from project:`));
+    detectedCaps.forEach((c) => console.log(chalk.gray(`  • ${c.replace(/_/g, " ").toLowerCase()}`)));
+    capsToEnable = detectedCaps;
   }
 
   if (capsToEnable.length > 0) {

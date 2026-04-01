@@ -19,7 +19,31 @@ export interface AndroidConfig {
 // ASC Provisioning
 export type CertificateType = "IOS_DISTRIBUTION" | "IOS_DEVELOPMENT";
 export type ProfileType = "IOS_APP_DEVELOPMENT" | "IOS_APP_STORE" | "IOS_APP_ADHOC";
-export type CapabilityType = "PUSH_NOTIFICATIONS" | "ASSOCIATED_DOMAINS" | "APPLE_ID_AUTH" | "IN_APP_PURCHASE" | "GAME_CENTER";
+export type CapabilityType =
+  | "PUSH_NOTIFICATIONS"
+  | "ASSOCIATED_DOMAINS"
+  | "APPLE_ID_AUTH"
+  | "IN_APP_PURCHASE"
+  | "GAME_CENTER"
+  | "ICLOUD"
+  | "APP_GROUPS"
+  | "MAPS"
+  | "SIRIKIT"
+  | "WALLET"
+  | "HEALTHKIT"
+  | "HOMEKIT"
+  | "NFC_TAG_READING"
+  | "PERSONAL_VPN"
+  | "NETWORK_EXTENSIONS"
+  | "ACCESS_WIFI_INFORMATION"
+  | "CLASSKIT"
+  | "AUTOFILL_CREDENTIAL_PROVIDER"
+  | "MULTIPATH"
+  | "HOT_SPOT"
+  | "DATA_PROTECTION"
+  | "INTER_APP_AUDIO"
+  | "FONT_INSTALLATION"
+  | "WIRELESS_ACCESSORY_CONFIGURATION";
 
 export interface CertificateInfo {
   id: string;
