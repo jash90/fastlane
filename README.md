@@ -8,7 +8,7 @@
 
 ## Highlights
 
-- **Auto-detects** bundle ID from `app.json` and auto-registers it in Apple Developer if missing
+- **Auto-detects** bundle ID, package name, app name, and version from native files (`*.pbxproj`, `Info.plist`, `build.gradle(.kts)`) with `app.json` fallback — works without Expo
 - **JWT authentication** — connects to App Store Connect API without passwords
 - **iOS Provisioning** — register Bundle IDs, create certificates, manage provisioning profiles
 - **24 capabilities** auto-detected from `.entitlements` and `Info.plist` files (Push, iCloud, Sign in with Apple, HealthKit, NFC, and more)
@@ -85,7 +85,7 @@ A **Google Play service account JSON key** file:
 
 ## How It Works
 
-1. **Detect** — reads `app.json`, `.entitlements`, `Info.plist`, and `build.gradle` to extract identifiers and capabilities
+1. **Detect** — reads native project files (`*.pbxproj`, `Info.plist`, `.entitlements`, `build.gradle(.kts)`) with `app.json` fallback to extract identifiers, versions, and capabilities
 2. **Check existing config** — parses any existing `fastlane/.env` and `fastlane/Appfile`, offers to reuse credentials
 3. **Authenticate** — generates a JWT token and connects to the App Store Connect API
 4. **Fetch** — pulls Team ID, ITC Team ID, bundle IDs, and apps from Apple
@@ -161,6 +161,21 @@ Capabilities are auto-detected from `ios/**/*.entitlements`, `ios/**/Info.plist`
 | `com.apple.external-accessory.wireless-configuration` | Wireless Accessory |
 
 Also detected from `Info.plist`: `remote-notification` in UIBackgroundModes → Push Notifications.
+
+## Auto-Detection Sources
+
+All project metadata is detected automatically — `app.json` is optional:
+
+| Data | Primary source (native) | Fallback (app.json) |
+|---|---|---|
+| **iOS bundle ID** | `*.pbxproj` → `PRODUCT_BUNDLE_IDENTIFIER` | `ios.bundleIdentifier` |
+| **iOS version** | `Info.plist` → `CFBundleShortVersionString` | `version` |
+| **iOS build number** | `*.pbxproj` → `CURRENT_PROJECT_VERSION` | `ios.buildNumber` |
+| **App display name** | `Info.plist` → `CFBundleDisplayName` / `CFBundleName` | `name` |
+| **Android package** | `build.gradle(.kts)` → `applicationId` | `android.package` |
+| **Android version** | `build.gradle(.kts)` → `versionName` / `versionCode` | — |
+| **Capabilities** | `*.entitlements` + `Info.plist` | `plugins` + `ios.entitlements` |
+| **Xcode project** | `ios/*.xcodeproj` | — |
 
 ## CLI Subcommands
 
