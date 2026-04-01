@@ -56,7 +56,7 @@ SUPPLY_JSON_KEY="${androidConfig.jsonKeyPath}"
     const gitignoreContent = await fs.readFile(gitignorePath, "utf8");
     const entries = [
       { check: "fastlane/.env", block: "\n# Fastlane secrets\nfastlane/.env\n" },
-      { check: "*.ipa", block: "\n# Fastlane build artifacts\n*.ipa\n*.dSYM.zip\n" },
+      { check: "*.ipa", block: "\n# Fastlane build artifacts\n*.ipa\n*.dSYM.zip\n*.aab\n*.apk\n" },
     ];
     for (const { check, block } of entries) {
       if (!gitignoreContent.includes(check)) {
