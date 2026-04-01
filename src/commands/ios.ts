@@ -7,9 +7,11 @@ import type { IosConfig } from "../types.js";
 import type { AppleCredentials } from "../api/auth.js";
 import { generateJWT } from "../api/auth.js";
 import { fetchBundleIds, fetchApps, fetchTeamId } from "../api/fetchers.js";
+import { registerBundleId } from "../api/bundle-ids.js";
 import { generateIosFiles } from "../generator/ios.js";
 import { generateEnvFile } from "../generator/env.js";
 import { findP8Files } from "../config/p8.js";
+import { detectAppName } from "../config/detect.js";
 import { loadCredentials, saveCredentials } from "../config/credentials-store.js";
 import { runBundleIdCommand } from "./bundle-id.js";
 import { runCertsCommand } from "./certs.js";
@@ -72,9 +74,17 @@ export async function runIosFlow(ctx: IosFlowContext): Promise<void> {
       const existingBundleId = iosAppfile.app_identifier ?? detectedBundleId;
       let bundleIdFromApple: string;
 
-      if (existingBundleId && bundleChoices.find((c) => c.value === existingBundleId)) {
-        bundleIdFromApple = existingBundleId;
-        console.log(chalk.green(`\n✅ Bundle ID auto-selected: ${bundleIdFromApple}`));
+      if (existingBundleId) {
+        if (bundleChoices.find((c) => c.value === existingBundleId)) {
+          bundleIdFromApple = existingBundleId;
+          console.log(chalk.green(`\n✅ Bundle ID auto-selected: ${bundleIdFromApple}`));
+        } else {
+          const regSpinner = ora(`Registering ${existingBundleId} in Apple Developer...`).start();
+          const appName = detectAppName(projectRoot) ?? existingBundleId.split(".").pop() ?? "App";
+          await registerBundleId(token, existingBundleId, appName);
+          regSpinner.succeed(`Bundle ID registered: ${existingBundleId}`);
+          bundleIdFromApple = existingBundleId;
+        }
       } else {
         const { selectedBundleId } = await inquirer.prompt([
           {
@@ -243,9 +253,17 @@ export async function runIosFlow(ctx: IosFlowContext): Promise<void> {
       }));
 
       let bundleIdFromApple: string;
-      if (detectedBundleId && bundleChoices.find((c) => c.value === detectedBundleId)) {
-        bundleIdFromApple = detectedBundleId;
-        console.log(chalk.green(`\n✅ Bundle ID auto-selected: ${bundleIdFromApple}`));
+      if (detectedBundleId) {
+        if (bundleChoices.find((c) => c.value === detectedBundleId)) {
+          bundleIdFromApple = detectedBundleId;
+          console.log(chalk.green(`\n✅ Bundle ID auto-selected: ${bundleIdFromApple}`));
+        } else {
+          const regSpinner = ora(`Registering ${detectedBundleId} in Apple Developer...`).start();
+          const appName = detectAppName(projectRoot) ?? detectedBundleId.split(".").pop() ?? "App";
+          await registerBundleId(token, detectedBundleId, appName);
+          regSpinner.succeed(`Bundle ID registered: ${detectedBundleId}`);
+          bundleIdFromApple = detectedBundleId;
+        }
       } else {
         const { selectedBundleId } = await inquirer.prompt([
           {
