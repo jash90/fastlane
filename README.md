@@ -16,6 +16,7 @@
 - **Single `fastlane/` directory** — one folder at project root for both iOS and Android config
 - **All secrets in `.env`** — Appfile and Matchfile read from ENV variables, nothing hardcoded in committed files
 - **Auto-cleanup** — removes build artifacts after upload, cleans up temporary certificate files
+- **Auto-gitignore** — adds `fastlane/.env`, `*.ipa`, `*.dSYM.zip`, `*.aab`, `*.apk` to `.gitignore`
 - **Smart defaults** — detects existing config and offers to reuse credentials
 - **Finds `.p8` keys automatically** — scans common locations and extracts Key ID from the filename
 - **CI-friendly subcommands** — `bundle-id`, `certs`, `provision`, `upload`, `release` for scripted pipelines
@@ -94,6 +95,7 @@ A **Google Play service account JSON key** file:
 8. **Configure Match** — asks for a private Git repo URL and encryption password for certificate storage
 9. **Validate Android** — authenticates with Google Play API and verifies app access
 10. **Generate** — writes all Fastlane files into a single `fastlane/` directory
+11. **Gitignore** — adds build artifacts (`*.ipa`, `*.dSYM.zip`, `*.aab`, `*.apk`) and secrets to `.gitignore`
 
 ## Generated Files
 
