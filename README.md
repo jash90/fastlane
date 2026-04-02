@@ -18,8 +18,11 @@
 - **Auto-cleanup** — removes build artifacts after upload, cleans up temporary certificate files
 - **Auto-gitignore** — adds `fastlane/.env`, `*.ipa`, `*.dSYM.zip`, `*.aab`, `*.apk` to `.gitignore`
 - **Xcode signing** — auto-sets `DEVELOPMENT_TEAM` and `CODE_SIGN_STYLE` in `.pbxproj` (skips if already configured or conflicts with `app.json`)
-- **Smart defaults** — detects existing config and offers to reuse credentials
+- **App record check** — detects missing App Store Connect app records and offers to create them via `fastlane produce`
+- **CocoaPods integration** — runs `pod install` before each build to ensure generated files are up to date
+- **Smart defaults** — detects existing config and offers to reuse credentials, remembers Apple ID across runs
 - **Finds `.p8` keys automatically** — scans common locations and extracts Key ID from the filename
+- **Setup guide** — shows step-by-step instructions for generating API keys and finding Issuer ID
 - **CI-friendly subcommands** — `bundle-id`, `certs`, `provision`, `upload`, `release` for scripted pipelines
 
 ## Quick Start
@@ -64,13 +67,22 @@ fastlane-init release --platform android --track production --rollout 0.1
 
 ### iOS
 
-Three things from App Store Connect → Users & Access → Integrations → Keys:
+Three things from App Store Connect:
+
+1. Go to [appstoreconnect.apple.com](https://appstoreconnect.apple.com) → **Users & Access** → **Integrations** → **App Store Connect API**
+2. Click **"+"** to generate a new key (role: **Admin** or **App Manager**)
+3. Download the `.p8` file — **you can only download it once**
 
 | Credential | Where to find |
 |---|---|
-| **Key ID** | Listed next to your key name |
-| **Issuer ID** | Shown at the top of the Keys page |
+| **Key ID** | Listed next to your key name on the Keys page |
+| **Issuer ID** | Shown at the top of the Keys page (UUID format) |
 | **`.p8` file** | Downloaded when the key was created (one-time download) |
+
+Place the `.p8` file in one of these directories (auto-detected):
+- `./private_keys`
+- `~/.private_keys`
+- `~/.appstoreconnect/private_keys`
 
 Everything else — Team ID, ITC Team ID, bundle IDs, app list — is fetched automatically from the Apple API.
 
@@ -91,13 +103,14 @@ A **Google Play service account JSON key** file:
 3. **Authenticate** — generates a JWT token and connects to the App Store Connect API
 4. **Fetch** — pulls Team ID, ITC Team ID, bundle IDs, and apps from Apple
 5. **Auto-register** — if the detected bundle ID doesn't exist in Apple Developer, creates it automatically
-6. **Auto-enable capabilities** — detects capabilities from `.entitlements` / `Info.plist` and enables them without prompting
-7. **Set Xcode signing** — writes `DEVELOPMENT_TEAM` and `CODE_SIGN_STYLE = Automatic` into `.pbxproj` (only if not already set and no conflicting team in `app.json`)
-8. **Provision** (optional) — creates certificates, auto-selects matching App Store provisioning profile
-9. **Configure Match** — asks for a private Git repo URL and encryption password for certificate storage
-10. **Validate Android** — authenticates with Google Play API and verifies app access
-11. **Generate** — writes all Fastlane files into a single `fastlane/` directory
-12. **Gitignore** — adds build artifacts (`*.ipa`, `*.dSYM.zip`, `*.aab`, `*.apk`) and secrets to `.gitignore`
+6. **Check app record** — if no app record exists on App Store Connect for the selected bundle ID, offers to create one via `fastlane produce` (Apple ID login required — the ASC API does not support app creation)
+7. **Auto-enable capabilities** — detects capabilities from `.entitlements` / `Info.plist` and enables them without prompting
+8. **Set Xcode signing** — writes `DEVELOPMENT_TEAM` and `CODE_SIGN_STYLE = Automatic` into `.pbxproj` (only if not already set and no conflicting team in `app.json`)
+9. **Provision** (optional) — creates certificates, auto-selects matching App Store provisioning profile
+10. **Configure Match** — asks for a private Git repo URL and encryption password for certificate storage
+11. **Validate Android** — authenticates with Google Play API and verifies app access
+12. **Generate** — writes all Fastlane files into a single `fastlane/` directory
+13. **Gitignore** — adds build artifacts (`*.ipa`, `*.dSYM.zip`, `*.aab`, `*.apk`) and secrets to `.gitignore`
 
 ## Generated Files
 
@@ -229,8 +242,8 @@ fastlane-init release --platform android --track production --rollout 0.1
 
 ```bash
 fastlane ios certs      # Fetch certificates and profiles via Match
-fastlane ios beta       # Build and upload to TestFlight
-fastlane ios release    # Build and submit to App Store
+fastlane ios beta       # pod install → build → upload to TestFlight → cleanup
+fastlane ios release    # pod install → build → submit to App Store → cleanup
 ```
 
 ### Android

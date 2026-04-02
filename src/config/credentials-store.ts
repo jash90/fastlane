@@ -5,6 +5,7 @@ import os from "os";
 export interface SavedCredentials {
   issuerId?: string;
   keyId?: string;
+  appleId?: string;
   p8Path?: string;
   savedAt: string;
 }

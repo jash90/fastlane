@@ -1,6 +1,7 @@
 import inquirer from "inquirer";
 import chalk from "chalk";
 import ora from "ora";
+import { execFileSync } from "child_process";
 import fs from "fs";
 import path from "path";
 import type { IosConfig } from "../types.js";
@@ -16,6 +17,64 @@ import { loadCredentials, saveCredentials } from "../config/credentials-store.js
 import { runBundleIdCommand } from "./bundle-id.js";
 import { runCertsCommand } from "./certs.js";
 import { runProvisionCommand } from "./provision.js";
+
+async function ensureAppRecord(
+  bundleId: string,
+  apps: { bundleId: string }[],
+  projectRoot: string,
+  appleId: string,
+): Promise<void> {
+  const existingApp = apps.find((a) => a.bundleId === bundleId);
+  if (existingApp) return;
+
+  console.log(chalk.yellow(`\n⚠️  No app record found for ${bundleId} on App Store Connect.`));
+  console.log(chalk.gray("  An app record is required for TestFlight and App Store uploads.\n"));
+
+  const { shouldCreate } = await inquirer.prompt([
+    {
+      type: "confirm",
+      name: "shouldCreate",
+      message: "Create app record now via fastlane produce?",
+      default: true,
+    },
+  ]);
+
+  if (!shouldCreate) {
+    console.log(chalk.gray("  You can create it later at https://appstoreconnect.apple.com → My Apps → \"+\"\n"));
+    return;
+  }
+
+  const defaultName = detectAppName(projectRoot) ?? bundleId.split(".").pop() ?? "App";
+
+  const { appName } = await inquirer.prompt([
+    {
+      type: "input",
+      name: "appName",
+      message: "App name:",
+      default: defaultName,
+      validate: (v: string) => v.trim().length > 0 || "Required",
+    },
+  ]);
+
+  console.log(chalk.gray("\n  fastlane produce requires Apple ID login (password prompt may appear):\n"));
+
+  try {
+    execFileSync(
+      "fastlane",
+      ["produce", "create", "-a", bundleId, "--app_name", appName, "-u", appleId],
+      { stdio: "inherit", cwd: projectRoot }
+    );
+    console.log(chalk.green(`\n✅ App record created: ${appName} (${bundleId})`));
+  } catch {
+    console.log(chalk.red(`\n✖ Failed to create app record via fastlane produce.`));
+    console.log(chalk.bold("\n  To create it manually:"));
+    console.log(chalk.gray("  1. Go to https://appstoreconnect.apple.com → My Apps → \"+\""));
+    console.log(chalk.gray("  2. Platform: iOS"));
+    console.log(chalk.gray(`  3. Bundle ID: select ${bundleId}`));
+    console.log(chalk.gray("  4. Fill in app name, primary language, and SKU"));
+    console.log(chalk.gray("  5. Click Create\n"));
+  }
+}
 
 export interface IosFlowContext {
   projectRoot: string;
@@ -98,6 +157,7 @@ export async function runIosFlow(ctx: IosFlowContext): Promise<void> {
       }
 
       const appleId = iosAppfile.apple_id ?? "";
+      await ensureAppRecord(bundleIdFromApple, apps, projectRoot, appleId);
       const iosSpinner = ora("Generating iOS Fastlane files...").start();
 
       const iosConfig: IosConfig = {
@@ -132,12 +192,16 @@ export async function runIosFlow(ctx: IosFlowContext): Promise<void> {
     }
   } else {
     // ── Fresh iOS config ──────────────────────────────────────────────────
-    console.log(chalk.bold("\n🔑 App Store Connect API Credentials"));
-    console.log(
-      chalk.gray(
-        "You can find them at: https://appstoreconnect.apple.com → Users & Access → Keys\n"
-      )
-    );
+    console.log(chalk.bold("\n🔑 App Store Connect API Credentials\n"));
+    console.log(chalk.gray("  To generate a new API key:"));
+    console.log(chalk.gray("  1. Go to https://appstoreconnect.apple.com"));
+    console.log(chalk.gray("  2. Users & Access → Integrations → App Store Connect API"));
+    console.log(chalk.gray("  3. Click \"+\" to generate a new key (role: Admin or App Manager)"));
+    console.log(chalk.gray("  4. Download the .p8 file — you can only download it once!\n"));
+    console.log(chalk.gray("  Where to find your Issuer ID:"));
+    console.log(chalk.gray("  → Shown at the top of the same Keys page (UUID format)\n"));
+    console.log(chalk.gray("  Place the .p8 file in one of these directories:"));
+    console.log(chalk.gray("  • ./private_keys  • ~/.private_keys  • ~/.appstoreconnect/private_keys\n"));
 
     const saved = loadCredentials();
 
@@ -214,7 +278,7 @@ export async function runIosFlow(ctx: IosFlowContext): Promise<void> {
         type: "input",
         name: "appleId",
         message: "Apple ID (email):",
-        default: iosAppfile.apple_id,
+        default: iosAppfile.apple_id ?? saved?.appleId,
         validate: (v) => v.includes("@") || "Enter a valid email",
       },
     ]);
@@ -246,6 +310,7 @@ export async function runIosFlow(ctx: IosFlowContext): Promise<void> {
       saveCredentials({
         issuerId: appleCreds.issuerId,
         keyId: appleCreds.keyId,
+        appleId: appleCreds.appleId,
         p8Path: p8Files.find(() => true),
         savedAt: new Date().toISOString(),
       });
@@ -284,6 +349,8 @@ export async function runIosFlow(ctx: IosFlowContext): Promise<void> {
         ]);
         bundleIdFromApple = selectedBundleId;
       }
+
+      await ensureAppRecord(bundleIdFromApple, apps, projectRoot, appleCreds.appleId);
 
       // ── Provisioning setup (optional) ─────────────────────────────────
       const { setupProvisioning } = await inquirer.prompt([{

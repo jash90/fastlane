@@ -61,6 +61,7 @@ app_identifier([ENV["APP_IDENTIFIER"]])
   desc "Build and upload to TestFlight"
   lane :beta do
     match(type: "appstore", readonly: is_ci)
+    sh("cd ../ios && pod install")
     increment_build_number(xcodeproj: "${xcodeprojPath}")
     build_app(
       workspace: "ios/${scheme}.xcworkspace",
@@ -78,6 +79,7 @@ app_identifier([ENV["APP_IDENTIFIER"]])
   desc "Build and release to App Store"
   lane :release do
     match(type: "appstore", readonly: is_ci)
+    sh("cd ../ios && pod install")
     build_app(
       workspace: "ios/${scheme}.xcworkspace",
       scheme: "${scheme}",
