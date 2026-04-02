@@ -11,7 +11,7 @@ import { registerBundleId } from "../api/bundle-ids.js";
 import { generateIosFiles } from "../generator/ios.js";
 import { generateEnvFile } from "../generator/env.js";
 import { findP8Files } from "../config/p8.js";
-import { detectAppName } from "../config/detect.js";
+import { detectAppName, setXcodeTeam } from "../config/detect.js";
 import { loadCredentials, saveCredentials } from "../config/credentials-store.js";
 import { runBundleIdCommand } from "./bundle-id.js";
 import { runCertsCommand } from "./certs.js";
@@ -117,6 +117,15 @@ export async function runIosFlow(ctx: IosFlowContext): Promise<void> {
       await generateEnvFile(projectRoot, iosConfig);
 
       iosSpinner.succeed("iOS files generated!");
+
+      const teamResult = setXcodeTeam(projectRoot, teamId!);
+      if (teamResult === "set") {
+        console.log(chalk.green(`✅ DEVELOPMENT_TEAM set to ${teamId} in Xcode project`));
+      } else if (teamResult === "exists") {
+        console.log(chalk.gray(`ℹ️  DEVELOPMENT_TEAM already configured in Xcode project`));
+      } else if (teamResult === "conflict") {
+        console.log(chalk.yellow(`⚠️  Different team ID found in app.json — skipping Xcode project update`));
+      }
     } catch (err: any) {
       spinner.fail(chalk.red(`Connection error: ${err.message}`));
       console.log(chalk.yellow("⚠️  Existing credentials may be invalid. Re-run to enter new ones.\n"));
@@ -330,6 +339,15 @@ export async function runIosFlow(ctx: IosFlowContext): Promise<void> {
       await generateEnvFile(projectRoot, iosConfig);
 
       iosSpinner.succeed("iOS files generated!");
+
+      const teamResult = setXcodeTeam(projectRoot, teamId!);
+      if (teamResult === "set") {
+        console.log(chalk.green(`✅ DEVELOPMENT_TEAM set to ${teamId} in Xcode project`));
+      } else if (teamResult === "exists") {
+        console.log(chalk.gray(`ℹ️  DEVELOPMENT_TEAM already configured in Xcode project`));
+      } else if (teamResult === "conflict") {
+        console.log(chalk.yellow(`⚠️  Different team ID found in app.json — skipping Xcode project update`));
+      }
     } catch (err: any) {
       spinner.fail(chalk.red(`Connection error: ${err.message}`));
       console.log(chalk.yellow("⚠️  Skipping iOS configuration. Fix credentials and re-run.\n"));

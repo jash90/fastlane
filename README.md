@@ -17,6 +17,7 @@
 - **All secrets in `.env`** — Appfile and Matchfile read from ENV variables, nothing hardcoded in committed files
 - **Auto-cleanup** — removes build artifacts after upload, cleans up temporary certificate files
 - **Auto-gitignore** — adds `fastlane/.env`, `*.ipa`, `*.dSYM.zip`, `*.aab`, `*.apk` to `.gitignore`
+- **Xcode signing** — auto-sets `DEVELOPMENT_TEAM` and `CODE_SIGN_STYLE` in `.pbxproj` (skips if already configured or conflicts with `app.json`)
 - **Smart defaults** — detects existing config and offers to reuse credentials
 - **Finds `.p8` keys automatically** — scans common locations and extracts Key ID from the filename
 - **CI-friendly subcommands** — `bundle-id`, `certs`, `provision`, `upload`, `release` for scripted pipelines
@@ -91,11 +92,12 @@ A **Google Play service account JSON key** file:
 4. **Fetch** — pulls Team ID, ITC Team ID, bundle IDs, and apps from Apple
 5. **Auto-register** — if the detected bundle ID doesn't exist in Apple Developer, creates it automatically
 6. **Auto-enable capabilities** — detects capabilities from `.entitlements` / `Info.plist` and enables them without prompting
-7. **Provision** (optional) — creates certificates, auto-selects matching App Store provisioning profile
-8. **Configure Match** — asks for a private Git repo URL and encryption password for certificate storage
-9. **Validate Android** — authenticates with Google Play API and verifies app access
-10. **Generate** — writes all Fastlane files into a single `fastlane/` directory
-11. **Gitignore** — adds build artifacts (`*.ipa`, `*.dSYM.zip`, `*.aab`, `*.apk`) and secrets to `.gitignore`
+7. **Set Xcode signing** — writes `DEVELOPMENT_TEAM` and `CODE_SIGN_STYLE = Automatic` into `.pbxproj` (only if not already set and no conflicting team in `app.json`)
+8. **Provision** (optional) — creates certificates, auto-selects matching App Store provisioning profile
+9. **Configure Match** — asks for a private Git repo URL and encryption password for certificate storage
+10. **Validate Android** — authenticates with Google Play API and verifies app access
+11. **Generate** — writes all Fastlane files into a single `fastlane/` directory
+12. **Gitignore** — adds build artifacts (`*.ipa`, `*.dSYM.zip`, `*.aab`, `*.apk`) and secrets to `.gitignore`
 
 ## Generated Files
 
@@ -176,6 +178,7 @@ All project metadata is detected automatically — `app.json` is optional:
 | **Android version** | `build.gradle(.kts)` → `versionName` / `versionCode` | — |
 | **Capabilities** | `*.entitlements` + `Info.plist` | `plugins` + `ios.entitlements` |
 | **Xcode project** | `ios/*.xcodeproj` | — |
+| **Development team** | `*.pbxproj` → `DEVELOPMENT_TEAM` | `ios.appleTeamId` / `ios.teamId` |
 
 ## CLI Subcommands
 

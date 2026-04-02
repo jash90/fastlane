@@ -255,3 +255,77 @@ function extractPlistValue(plistContent: string, key: string): string | null {
   const regex = new RegExp(`<key>${key}</key>\\s*<string>([^<]+)</string>`);
   return plistContent.match(regex)?.[1] ?? null;
 }
+
+export function detectXcodeTeam(projectRoot: string): string | null {
+  try {
+    const iosDir = path.join(projectRoot, "ios");
+    if (!fs.existsSync(iosDir)) return null;
+    const pbxprojFiles = readdirRecursive(iosDir).filter((f) => f.endsWith(".pbxproj"));
+    for (const file of pbxprojFiles) {
+      const content = fs.readFileSync(file, "utf8");
+      const match = content.match(/DEVELOPMENT_TEAM\s*=\s*([^;]+)/);
+      if (match) {
+        const value = match[1].trim().replace(/"/g, "");
+        if (value && value !== "") return value;
+      }
+    }
+  } catch {}
+  return null;
+}
+
+/**
+ * Sets DEVELOPMENT_TEAM in .pbxproj only if not already configured
+ * and no different team is defined in app.json.
+ * Returns: "set" | "exists" | "conflict" | "no-project"
+ */
+export function setXcodeTeam(
+  projectRoot: string,
+  teamId: string
+): "set" | "exists" | "conflict" | "no-project" {
+  // Check app.json for an existing apple.teamId
+  const appJson = readAppJson(projectRoot);
+  const appJsonTeam: string | undefined =
+    appJson?.ios?.appleTeamId ?? appJson?.ios?.teamId ?? undefined;
+
+  if (appJsonTeam && appJsonTeam !== teamId) {
+    return "conflict";
+  }
+
+  // Check pbxproj for existing DEVELOPMENT_TEAM
+  const existingTeam = detectXcodeTeam(projectRoot);
+  if (existingTeam && existingTeam !== "" && existingTeam !== teamId) {
+    return "exists";
+  }
+  // Already set to the same value — nothing to do
+  if (existingTeam === teamId) {
+    return "exists";
+  }
+
+  const iosDir = path.join(projectRoot, "ios");
+  if (!fs.existsSync(iosDir)) return "no-project";
+
+  const pbxprojFiles = readdirRecursive(iosDir).filter((f) => f.endsWith(".pbxproj"));
+  if (pbxprojFiles.length === 0) return "no-project";
+
+  for (const file of pbxprojFiles) {
+    let content = fs.readFileSync(file, "utf8");
+
+    // Inject DEVELOPMENT_TEAM into every buildSettings block
+    content = content.replace(
+      /buildSettings\s*=\s*\{/g,
+      `buildSettings = {\n\t\t\t\tDEVELOPMENT_TEAM = ${teamId};`
+    );
+
+    // Set CODE_SIGN_STYLE = Automatic where not already set
+    if (!content.includes("CODE_SIGN_STYLE")) {
+      content = content.replace(
+        /DEVELOPMENT_TEAM\s*=\s*[^;]*;/g,
+        (match) => `${match}\n\t\t\t\tCODE_SIGN_STYLE = Automatic;`
+      );
+    }
+
+    fs.writeFileSync(file, content, "utf8");
+  }
+
+  return "set";
+}
