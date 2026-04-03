@@ -31,6 +31,14 @@ package_name(ENV["PACKAGE_NAME"])
   const androidBlock = `platform :android do
   desc "Build and upload to Google Play (internal track)"
   lane :beta do
+    # Bump patch version in build.gradle
+    gradle_file = File.expand_path("../../android/app/build.gradle", __dir__)
+    content = File.read(gradle_file)
+    content = content.gsub(/versionName\s+"(\d+)\.(\d+)\.(\d+)"/) do
+      "versionName \"#{$1}.#{$2}.#{$3.to_i + 1}\""
+    end
+    File.write(gradle_file, content)
+
     gradle(
       task: "bundle",
       build_type: "Release"
@@ -44,6 +52,18 @@ package_name(ENV["PACKAGE_NAME"])
 
   desc "Promote internal to production"
   lane :release do
+    # Bump patch version in build.gradle
+    gradle_file = File.expand_path("../../android/app/build.gradle", __dir__)
+    content = File.read(gradle_file)
+    content = content.gsub(/versionName\s+"(\d+)\.(\d+)\.(\d+)"/) do
+      "versionName \"#{$1}.#{$2}.#{$3.to_i + 1}\""
+    end
+    File.write(gradle_file, content)
+
+    gradle(
+      task: "bundle",
+      build_type: "Release"
+    )
     upload_to_play_store(
       track_promote_to: "production",
       aab: "app/build/outputs/bundle/release/app-release.aab"

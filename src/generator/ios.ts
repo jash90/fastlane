@@ -62,6 +62,7 @@ app_identifier([ENV["APP_IDENTIFIER"]])
   lane :beta do
     match(type: "appstore", readonly: is_ci)
     sh("cd ../ios && pod install")
+    increment_version_number(bump_type: "patch", xcodeproj: "${xcodeprojPath}")
     increment_build_number(xcodeproj: "${xcodeprojPath}")
     build_app(
       workspace: "ios/${scheme}.xcworkspace",
@@ -80,6 +81,8 @@ app_identifier([ENV["APP_IDENTIFIER"]])
   lane :release do
     match(type: "appstore", readonly: is_ci)
     sh("cd ../ios && pod install")
+    increment_version_number(bump_type: "patch", xcodeproj: "${xcodeprojPath}")
+    increment_build_number(xcodeproj: "${xcodeprojPath}")
     build_app(
       workspace: "ios/${scheme}.xcworkspace",
       scheme: "${scheme}",

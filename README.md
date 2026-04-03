@@ -19,6 +19,7 @@
 - **Auto-gitignore** — adds `fastlane/.env`, `*.ipa`, `*.dSYM.zip`, `*.aab`, `*.apk` to `.gitignore`
 - **Xcode signing** — auto-sets `DEVELOPMENT_TEAM` and `CODE_SIGN_STYLE` in `.pbxproj` (skips if already configured or conflicts with `app.json`)
 - **App record check** — detects missing App Store Connect app records and offers to create them via `fastlane produce`
+- **Auto version bump** — automatically increments patch version (`X.Y.Z` → `X.Y.Z+1`) before every build on both platforms
 - **CocoaPods integration** — runs `pod install` before each build to ensure generated files are up to date
 - **Smart defaults** — detects existing config and offers to reuse credentials, remembers Apple ID across runs
 - **Finds `.p8` keys automatically** — scans common locations and extracts Key ID from the filename
@@ -242,15 +243,15 @@ fastlane-init release --platform android --track production --rollout 0.1
 
 ```bash
 fastlane ios certs      # Fetch certificates and profiles via Match
-fastlane ios beta       # pod install → build → upload to TestFlight → cleanup
-fastlane ios release    # pod install → build → submit to App Store → cleanup
+fastlane ios beta       # pod install → bump version patch → increment build number → build → upload to TestFlight → cleanup
+fastlane ios release    # pod install → bump version patch → increment build number → build → submit to App Store → cleanup
 ```
 
 ### Android
 
 ```bash
-fastlane android beta       # Build AAB and upload to Play Store (internal track)
-fastlane android release    # Promote from internal track to production
+fastlane android beta       # Bump version patch → build AAB → upload to Play Store (internal track)
+fastlane android release    # Bump version patch → build AAB → release to production
 ```
 
 ## Configuration Reuse
