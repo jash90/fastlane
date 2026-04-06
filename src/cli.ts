@@ -12,6 +12,7 @@ import { runProvisionCommand } from "./commands/provision.js";
 import { runUploadCommand } from "./commands/upload.js";
 import { runReleaseCommand } from "./commands/release.js";
 import type { SubcommandFlags } from "./types.js";
+import { checkVersion } from "./config/version-check.js";
 
 function parseFlags(argv: string[]): SubcommandFlags {
   const flags: SubcommandFlags = {};
@@ -89,7 +90,7 @@ async function routeSubcommand(subcommand: string, flags: SubcommandFlags): Prom
 const subcommand = process.argv[2];
 if (subcommand && !subcommand.startsWith("-")) {
   const flags = parseFlags(process.argv.slice(3));
-  routeSubcommand(subcommand, flags).catch((err) => {
+  checkVersion().then(() => routeSubcommand(subcommand, flags)).catch((err) => {
     console.error(chalk.red("\nError:"), err.message);
     process.exit(1);
   });
@@ -101,6 +102,9 @@ const home = process.env.HOME ?? "";
 console.log(chalk.bold.cyan("\n🚀 Fastlane React Native Configurator\n"));
 
 async function main() {
+  // ── 0. Check for newer version ──────────────────────────────────────────
+  await checkVersion();
+
   // ── 1. Auto-detect from project ──────────────────────────────────────────
   const detectedBundleId = detectIosBundleId(projectRoot);
   const androidConfig = detectAndroidConfig(projectRoot);
