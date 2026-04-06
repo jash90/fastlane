@@ -274,6 +274,35 @@ export function detectXcodeTeam(projectRoot: string): string | null {
 }
 
 /**
+ * Sets appleTeamId in app.json (under expo.ios or ios depending on structure).
+ * Returns: "set" | "exists" | "no-file"
+ */
+export function setAppJsonTeam(
+  projectRoot: string,
+  teamId: string
+): "set" | "exists" | "no-file" {
+  const appJsonPath = path.join(projectRoot, "app.json");
+  if (!fs.existsSync(appJsonPath)) return "no-file";
+
+  try {
+    const raw = JSON.parse(fs.readFileSync(appJsonPath, "utf8"));
+    const isExpo = !!raw.expo;
+    const root = isExpo ? raw.expo : raw;
+
+    const existing = root.ios?.appleTeamId ?? root.ios?.teamId;
+    if (existing === teamId) return "exists";
+
+    if (!root.ios) root.ios = {};
+    root.ios.appleTeamId = teamId;
+
+    fs.writeFileSync(appJsonPath, JSON.stringify(raw, null, 2) + "\n", "utf8");
+    return "set";
+  } catch {
+    return "no-file";
+  }
+}
+
+/**
  * Sets DEVELOPMENT_TEAM in .pbxproj only if not already configured
  * and no different team is defined in app.json.
  * Returns: "set" | "exists" | "conflict" | "no-project"

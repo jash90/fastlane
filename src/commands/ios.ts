@@ -12,7 +12,7 @@ import { registerBundleId } from "../api/bundle-ids.js";
 import { generateIosFiles } from "../generator/ios.js";
 import { generateEnvFile } from "../generator/env.js";
 import { findP8Files } from "../config/p8.js";
-import { detectAppName, setXcodeTeam } from "../config/detect.js";
+import { detectAppName, setXcodeTeam, setAppJsonTeam } from "../config/detect.js";
 import { loadCredentials, saveCredentials } from "../config/credentials-store.js";
 import { runBundleIdCommand } from "./bundle-id.js";
 import { runCertsCommand } from "./certs.js";
@@ -177,6 +177,13 @@ export async function runIosFlow(ctx: IosFlowContext): Promise<void> {
       await generateEnvFile(projectRoot, iosConfig);
 
       iosSpinner.succeed("iOS files generated!");
+
+      const appJsonResult = setAppJsonTeam(projectRoot, teamId!);
+      if (appJsonResult === "set") {
+        console.log(chalk.green(`✅ appleTeamId set to ${teamId} in app.json`));
+      } else if (appJsonResult === "exists") {
+        console.log(chalk.gray(`ℹ️  appleTeamId already configured in app.json`));
+      }
 
       const teamResult = setXcodeTeam(projectRoot, teamId!);
       if (teamResult === "set") {
@@ -406,6 +413,13 @@ export async function runIosFlow(ctx: IosFlowContext): Promise<void> {
       await generateEnvFile(projectRoot, iosConfig);
 
       iosSpinner.succeed("iOS files generated!");
+
+      const appJsonResult = setAppJsonTeam(projectRoot, teamId!);
+      if (appJsonResult === "set") {
+        console.log(chalk.green(`✅ appleTeamId set to ${teamId} in app.json`));
+      } else if (appJsonResult === "exists") {
+        console.log(chalk.gray(`ℹ️  appleTeamId already configured in app.json`));
+      }
 
       const teamResult = setXcodeTeam(projectRoot, teamId!);
       if (teamResult === "set") {
