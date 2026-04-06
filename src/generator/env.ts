@@ -1,6 +1,7 @@
 import fs from "fs-extra";
 import path from "path";
 import type { IosConfig, AndroidConfig } from "../types.js";
+import { generateFastlaneGitignore } from "./gitignore.js";
 
 export async function generateEnvFile(projectRoot: string, iosConfig?: IosConfig, androidConfig?: AndroidConfig) {
   const envPath = path.join(projectRoot, "fastlane", ".env");
@@ -57,6 +58,7 @@ SUPPLY_JSON_KEY="${androidConfig.jsonKeyPath}"
     const entries = [
       { check: "fastlane/.env", block: "\n# Fastlane secrets\nfastlane/.env\n" },
       { check: "*.ipa", block: "\n# Fastlane build artifacts\n*.ipa\n*.dSYM.zip\n*.aab\n*.apk\n" },
+      { check: "fastlane/report.xml", block: "\n# Fastlane reports\nfastlane/report.xml\nfastlane/Preview.html\nfastlane/screenshots\nfastlane/test_output\n" },
     ];
     for (const { check, block } of entries) {
       if (!gitignoreContent.includes(check)) {
@@ -64,4 +66,7 @@ SUPPLY_JSON_KEY="${androidConfig.jsonKeyPath}"
       }
     }
   }
+
+  // Generate fastlane/.gitignore with common ignore entries
+  await generateFastlaneGitignore(projectRoot);
 }
