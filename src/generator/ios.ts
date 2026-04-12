@@ -43,10 +43,6 @@ app_identifier([ENV["APP_IDENTIFIER"]])
   const fastfilePath = path.join(fastlaneDir, "Fastfile");
   const existingFastfile = fs.existsSync(fastfilePath) ? await fs.readFile(fastfilePath, "utf8") : "";
 
-  const gitActions = config.autoCommitAfterBump
-    ? `\n    git_add(path: "${xcodeprojPath}")\n    git_commit(path: "${xcodeprojPath}", message: "Bump version to #{lane_context[SharedValues::VERSION_NUMBER]} (#{lane_context[SharedValues::BUILD_NUMBER]})")\n    push_to_git_remote`
-    : "";
-
   const iosBlock = `platform :ios do
   before_all do
     @api_key = app_store_connect_api_key(
@@ -67,7 +63,7 @@ app_identifier([ENV["APP_IDENTIFIER"]])
     match(type: "appstore", readonly: is_ci)
     sh("cd ../ios && pod install")
     increment_version_number(bump_type: "patch", xcodeproj: "${xcodeprojPath}")
-    increment_build_number(xcodeproj: "${xcodeprojPath}")${gitActions}
+    increment_build_number(xcodeproj: "${xcodeprojPath}")
     build_app(
       workspace: "ios/${scheme}.xcworkspace",
       scheme: "${scheme}",
@@ -86,7 +82,7 @@ app_identifier([ENV["APP_IDENTIFIER"]])
     match(type: "appstore", readonly: is_ci)
     sh("cd ../ios && pod install")
     increment_version_number(bump_type: "patch", xcodeproj: "${xcodeprojPath}")
-    increment_build_number(xcodeproj: "${xcodeprojPath}")${gitActions}
+    increment_build_number(xcodeproj: "${xcodeprojPath}")
     build_app(
       workspace: "ios/${scheme}.xcworkspace",
       scheme: "${scheme}",

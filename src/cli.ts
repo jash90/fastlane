@@ -147,15 +147,6 @@ async function main() {
   const doIos = platforms.includes("ios");
   const doAndroid = platforms.includes("android");
 
-  const { autoCommitAfterBump } = await inquirer.prompt([
-    {
-      type: "confirm",
-      name: "autoCommitAfterBump",
-      message: "Auto-commit and push to remote after version bump?",
-      default: false,
-    },
-  ]);
-
   // ── 3. Load existing .env configurations ────────────────────────────────
   const existingEnv = parseEnvFile(path.join(projectRoot, "fastlane", ".env"));
   const existingIosEnv = existingEnv;
@@ -183,11 +174,11 @@ async function main() {
 
   // ── 4. Run platform flows ────────────────────────────────────────────────
   if (doIos) {
-    await runIosFlow({ projectRoot, home, detectedBundleId, xcodeproj, existingIosEnv, iosAppfile, autoCommitAfterBump });
+    await runIosFlow({ projectRoot, home, detectedBundleId, xcodeproj, existingIosEnv, iosAppfile });
   }
 
   if (doAndroid) {
-    await runAndroidFlow({ projectRoot, detectedAndroidConfig: androidConfig, existingAndroidEnv, androidAppfile, autoCommitAfterBump });
+    await runAndroidFlow({ projectRoot, detectedAndroidConfig: androidConfig, existingAndroidEnv, androidAppfile });
   }
 
   // ── 5. Summary ──────────────────────────────────────────────────────────────

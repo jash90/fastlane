@@ -28,10 +28,6 @@ package_name(ENV["PACKAGE_NAME"])
   const fastfilePath = path.join(fastlaneDir, "Fastfile");
   const existingFastfile = fs.existsSync(fastfilePath) ? await fs.readFile(fastfilePath, "utf8") : "";
 
-  const gitActions = config.autoCommitAfterBump
-    ? `\n    git_add(path: gradle_file)\n    git_commit(path: gradle_file, message: "Bump version")\n    push_to_git_remote`
-    : "";
-
   const androidBlock = `platform :android do
   desc "Build and upload to Google Play (internal track)"
   lane :beta do
@@ -41,7 +37,7 @@ package_name(ENV["PACKAGE_NAME"])
     content = content.gsub(/versionName\s+"(\d+)\.(\d+)\.(\d+)"/) do
       "versionName \"#{$1}.#{$2}.#{$3.to_i + 1}\""
     end
-    File.write(gradle_file, content)${gitActions}
+    File.write(gradle_file, content)
 
     gradle(
       task: "bundle",
@@ -62,7 +58,7 @@ package_name(ENV["PACKAGE_NAME"])
     content = content.gsub(/versionName\s+"(\d+)\.(\d+)\.(\d+)"/) do
       "versionName \"#{$1}.#{$2}.#{$3.to_i + 1}\""
     end
-    File.write(gradle_file, content)${gitActions}
+    File.write(gradle_file, content)
 
     gradle(
       task: "bundle",
