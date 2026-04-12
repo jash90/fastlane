@@ -44,7 +44,7 @@ app_identifier([ENV["APP_IDENTIFIER"]])
   const existingFastfile = fs.existsSync(fastfilePath) ? await fs.readFile(fastfilePath, "utf8") : "";
 
   const gitActions = config.autoCommitAfterBump
-    ? `\n    commit_version_bump(xcodeproj: "${xcodeprojPath}", force: true)\n    push_to_git_remote`
+    ? `\n    git_add(path: "${xcodeprojPath}")\n    git_commit(path: "${xcodeprojPath}", message: "Bump version to #{lane_context[SharedValues::VERSION_NUMBER]} (#{lane_context[SharedValues::BUILD_NUMBER]})")\n    push_to_git_remote`
     : "";
 
   const iosBlock = `platform :ios do

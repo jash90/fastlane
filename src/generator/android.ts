@@ -29,7 +29,7 @@ package_name(ENV["PACKAGE_NAME"])
   const existingFastfile = fs.existsSync(fastfilePath) ? await fs.readFile(fastfilePath, "utf8") : "";
 
   const gitActions = config.autoCommitAfterBump
-    ? `\n    git_commit(path: gradle_file, message: "Bump version")\n    push_to_git_remote`
+    ? `\n    git_add(path: gradle_file)\n    git_commit(path: gradle_file, message: "Bump version")\n    push_to_git_remote`
     : "";
 
   const androidBlock = `platform :android do
