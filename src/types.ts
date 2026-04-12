@@ -9,11 +9,13 @@ export interface IosConfig {
   matchGitUrl: string;
   matchPassword: string;
   xcodeproj: string;
+  autoCommitAfterBump?: boolean;
 }
 
 export interface AndroidConfig {
   packageName: string;
   jsonKeyPath: string;
+  autoCommitAfterBump?: boolean;
 }
 
 // ASC Provisioning
