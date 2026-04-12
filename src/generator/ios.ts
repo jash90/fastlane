@@ -57,7 +57,7 @@ app_identifier([ENV["APP_IDENTIFIER"]])
 
   // ── Git stash / commit snippets ──────────────────────────────────────
   const gitStashSnippet = config.autoCommitAfterBump
-    ? `\n    sh("git stash --include-untracked || true")`
+    ? `\n    sh("git stash push -m 'fastlane: pre-bump iOS stash' --include-untracked || true")`
     : "";
   const gitCommitSnippet = config.autoCommitAfterBump
     ? `
