@@ -1,6 +1,6 @@
 {
   "name": "fastlane-init",
-  "version": "1.6.3",
+  "version": "1.6.4",
   "description": "Interactive CLI to auto-configure Fastlane for React Native projects",
   "type": "module",
   "main": "dist/cli.js",
