@@ -68,7 +68,7 @@ app_identifier([ENV["APP_IDENTIFIER"]])
     rescue => e
       UI.message("Push to remote skipped: \#{e.message}")
     end
-    sh("git stash pop || true")`
+    sh("git stash list | grep 'fastlane: pre-bump iOS stash' | head -1 | cut -d: -f1 | xargs git stash pop || true")`
     : "";
 
   // Fastfile — merge with existing android platform block
