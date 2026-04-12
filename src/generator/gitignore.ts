@@ -27,11 +27,14 @@ export async function generateFastlaneGitignore(projectRoot: string): Promise<vo
   const gitignorePath = path.join(fastlaneDir, ".gitignore");
   const existing = fs.existsSync(gitignorePath) ? await fs.readFile(gitignorePath, "utf8") : "";
 
+  const existingLines = new Set(existing.split("\n").map((l) => l.trimEnd()));
+
   const newEntries = FASTLANE_GITIGNORE_ENTRIES.filter(
-    (entry) => entry === "" || entry.startsWith("#") || !existing.includes(entry)
+    (entry) => entry === "" || !existingLines.has(entry)
   );
 
-  if (newEntries.length === 0) return;
+  // If only empty separator lines remain, nothing new to add
+  if (newEntries.every((e) => e === "")) return;
 
   // If file already has content, start with a newline separator
   const separator = existing && !existing.endsWith("\n") ? "\n" : "";
