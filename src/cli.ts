@@ -153,6 +153,15 @@ async function main() {
     console.log(chalk.gray(`📱 Expo project detected`));
   }
 
+  const { autoCommitAfterBump } = await inquirer.prompt([
+    {
+      type: "confirm",
+      name: "autoCommitAfterBump",
+      message: "Auto-commit and push after version bump?",
+      default: false,
+    },
+  ]);
+
   // ── 3. Load existing .env configurations ────────────────────────────────
   const existingEnv = parseEnvFile(path.join(projectRoot, "fastlane", ".env"));
   const existingIosEnv = existingEnv;
@@ -180,11 +189,11 @@ async function main() {
 
   // ── 4. Run platform flows ────────────────────────────────────────────────
   if (doIos) {
-    await runIosFlow({ projectRoot, home, detectedBundleId, xcodeproj, existingIosEnv, iosAppfile, isExpo });
+    await runIosFlow({ projectRoot, home, detectedBundleId, xcodeproj, existingIosEnv, iosAppfile, autoCommitAfterBump, isExpo });
   }
 
   if (doAndroid) {
-    await runAndroidFlow({ projectRoot, detectedAndroidConfig: androidConfig, existingAndroidEnv, androidAppfile, isExpo });
+    await runAndroidFlow({ projectRoot, detectedAndroidConfig: androidConfig, existingAndroidEnv, androidAppfile, autoCommitAfterBump, isExpo });
   }
 
   // ── 5. Summary ──────────────────────────────────────────────────────────────

@@ -55,6 +55,22 @@ app_identifier([ENV["APP_IDENTIFIER"]])
     : `    increment_version_number(bump_type: "patch", xcodeproj: "${xcodeprojPath}")
     increment_build_number(xcodeproj: "${xcodeprojPath}")`;
 
+  // ── Git stash / commit snippets ──────────────────────────────────────
+  const gitStashSnippet = config.autoCommitAfterBump
+    ? `\n    sh("git stash --include-untracked || true")`
+    : "";
+  const gitCommitSnippet = config.autoCommitAfterBump
+    ? `
+    sh("git add -A")
+    git_commit(path: ".", message: "Bump iOS version", allow_nothing_to_commit: true)
+    begin
+      push_to_git_remote
+    rescue => e
+      UI.message("Push to remote skipped: \#{e.message}")
+    end
+    sh("git stash pop || true")`
+    : "";
+
   // Fastfile — merge with existing android platform block
   const fastfilePath = path.join(fastlaneDir, "Fastfile");
   const existingFastfile = fs.existsSync(fastfilePath) ? await fs.readFile(fastfilePath, "utf8") : "";
@@ -78,8 +94,8 @@ app_identifier([ENV["APP_IDENTIFIER"]])
 
   desc "Build and upload to TestFlight"
   lane :beta do
-    match(type: "appstore", readonly: is_ci)${podInstallLine}
-${versionBumpSnippet}
+    match(type: "appstore", readonly: is_ci)${podInstallLine}${gitStashSnippet}
+${versionBumpSnippet}${gitCommitSnippet}
     build_app(
       workspace: "ios/${scheme}.xcworkspace",
       scheme: "${scheme}",
@@ -95,8 +111,8 @@ ${versionBumpSnippet}
 
   desc "Build and release to App Store"
   lane :release do
-    match(type: "appstore", readonly: is_ci)${podInstallLine}
-${versionBumpSnippet}
+    match(type: "appstore", readonly: is_ci)${podInstallLine}${gitStashSnippet}
+${versionBumpSnippet}${gitCommitSnippet}
     build_app(
       workspace: "ios/${scheme}.xcworkspace",
       scheme: "${scheme}",

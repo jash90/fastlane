@@ -17,11 +17,12 @@ export interface AndroidFlowContext {
   detectedAndroidConfig: DetectedAndroidInfo;
   existingAndroidEnv: Record<string, string>;
   androidAppfile: Record<string, string>;
+  autoCommitAfterBump?: boolean;
   isExpo?: boolean;
 }
 
 export async function runAndroidFlow(ctx: AndroidFlowContext): Promise<void> {
-  const { projectRoot, detectedAndroidConfig, existingAndroidEnv, androidAppfile, isExpo } = ctx;
+  const { projectRoot, detectedAndroidConfig, existingAndroidEnv, androidAppfile, autoCommitAfterBump, isExpo } = ctx;
 
   console.log(chalk.bold("\n🤖 Android Configuration (Google Play)"));
   console.log(
@@ -86,7 +87,7 @@ export async function runAndroidFlow(ctx: AndroidFlowContext): Promise<void> {
     }
 
     const androidSpinner = ora("Generating Android Fastlane files...").start();
-    const androidConfig: AndroidConfig = { packageName, jsonKeyPath, isExpo };
+    const androidConfig: AndroidConfig = { packageName, jsonKeyPath, autoCommitAfterBump, isExpo };
     await generateAndroidFiles(projectRoot, androidConfig);
     await generateEnvFile(projectRoot, undefined, androidConfig);
     androidSpinner.succeed("Android files generated!");

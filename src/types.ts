@@ -9,12 +9,14 @@ export interface IosConfig {
   matchGitUrl: string;
   matchPassword: string;
   xcodeproj: string;
+  autoCommitAfterBump?: boolean;
   isExpo?: boolean;
 }
 
 export interface AndroidConfig {
   packageName: string;
   jsonKeyPath: string;
+  autoCommitAfterBump?: boolean;
   isExpo?: boolean;
 }
 

@@ -45,14 +45,30 @@ package_name(ENV["PACKAGE_NAME"])
     end
     File.write(gradle_file, content)`;
 
+  // ── Git stash / commit snippets ──────────────────────────────────────
+  const gitStashSnippet = config.autoCommitAfterBump
+    ? `\n    sh("git stash --include-untracked || true")`
+    : "";
+  const gitCommitSnippet = config.autoCommitAfterBump
+    ? `
+    sh("git add -A")
+    git_commit(path: ".", message: "Bump Android version", allow_nothing_to_commit: true)
+    begin
+      push_to_git_remote
+    rescue => e
+      UI.message("Push to remote skipped: \#{e.message}")
+    end
+    sh("git stash pop || true")`
+    : "";
+
   // Fastfile — merge with existing ios platform block
   const fastfilePath = path.join(fastlaneDir, "Fastfile");
   const existingFastfile = fs.existsSync(fastfilePath) ? await fs.readFile(fastfilePath, "utf8") : "";
 
   const androidBlock = `platform :android do
   desc "Build and upload to Google Play (internal track)"
-  lane :beta do
-${versionBumpSnippet}
+  lane :beta do${gitStashSnippet}
+${versionBumpSnippet}${gitCommitSnippet}
 
     gradle(
       task: "bundle",
@@ -66,8 +82,8 @@ ${versionBumpSnippet}
   end
 
   desc "Promote internal to production"
-  lane :release do
-${versionBumpSnippet}
+  lane :release do${gitStashSnippet}
+${versionBumpSnippet}${gitCommitSnippet}
 
     gradle(
       task: "bundle",
