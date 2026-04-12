@@ -2,7 +2,7 @@
 import inquirer from "inquirer";
 import chalk from "chalk";
 import path from "path";
-import { detectAndroidConfig, detectIosBundleId, detectAppName, detectXcodeProject, detectIosVersion } from "./config/detect.js";
+import { detectAndroidConfig, detectIosBundleId, detectAppName, detectXcodeProject, detectIosVersion, detectIsExpo } from "./config/detect.js";
 import { parseEnvFile, parseAppfile } from "./config/parser.js";
 import { runIosFlow } from "./commands/ios.js";
 import { runAndroidFlow } from "./commands/android.js";
@@ -147,6 +147,12 @@ async function main() {
   const doIos = platforms.includes("ios");
   const doAndroid = platforms.includes("android");
 
+  // ── Auto-detect Expo ──────────────────────────────────────────────────
+  const isExpo = detectIsExpo(projectRoot);
+  if (isExpo) {
+    console.log(chalk.gray(`📱 Expo project detected`));
+  }
+
   // ── 3. Load existing .env configurations ────────────────────────────────
   const existingEnv = parseEnvFile(path.join(projectRoot, "fastlane", ".env"));
   const existingIosEnv = existingEnv;
@@ -174,11 +180,11 @@ async function main() {
 
   // ── 4. Run platform flows ────────────────────────────────────────────────
   if (doIos) {
-    await runIosFlow({ projectRoot, home, detectedBundleId, xcodeproj, existingIosEnv, iosAppfile });
+    await runIosFlow({ projectRoot, home, detectedBundleId, xcodeproj, existingIosEnv, iosAppfile, isExpo });
   }
 
   if (doAndroid) {
-    await runAndroidFlow({ projectRoot, detectedAndroidConfig: androidConfig, existingAndroidEnv, androidAppfile });
+    await runAndroidFlow({ projectRoot, detectedAndroidConfig: androidConfig, existingAndroidEnv, androidAppfile, isExpo });
   }
 
   // ── 5. Summary ──────────────────────────────────────────────────────────────

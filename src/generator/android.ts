@@ -24,6 +24,27 @@ package_name(ENV["PACKAGE_NAME"])
 
   await fs.writeFile(appfilePath, appfileContent);
 
+  // ── Version bump snippet (Expo vs bare RN) ──────────────────────────
+  const versionBumpSnippet = config.isExpo
+    ? `    # Bump patch version in app.json
+    require "json"
+    app_json_path = File.expand_path("../app.json", __dir__)
+    app_json = JSON.parse(File.read(app_json_path))
+    root = app_json.key?("expo") ? app_json["expo"] : app_json
+    parts = root["version"].split(".")
+    parts[-1] = (parts[-1].to_i + 1).to_s
+    root["version"] = parts.join(".")
+    File.write(app_json_path, JSON.pretty_generate(app_json) + "\\n")
+    UI.message("Version bumped to #{root['version']}")
+    sh("cd .. && npx expo prebuild --clean")`
+    : `    # Bump patch version in build.gradle
+    gradle_file = File.expand_path("../../android/app/build.gradle", __dir__)
+    content = File.read(gradle_file)
+    content = content.gsub(/versionName\\s+"(\\d+)\\.(\\d+)\\.(\\d+)"/) do
+      "versionName \\"#{$1}.#{$2}.#{$3.to_i + 1}\\""
+    end
+    File.write(gradle_file, content)`;
+
   // Fastfile — merge with existing ios platform block
   const fastfilePath = path.join(fastlaneDir, "Fastfile");
   const existingFastfile = fs.existsSync(fastfilePath) ? await fs.readFile(fastfilePath, "utf8") : "";
@@ -31,13 +52,7 @@ package_name(ENV["PACKAGE_NAME"])
   const androidBlock = `platform :android do
   desc "Build and upload to Google Play (internal track)"
   lane :beta do
-    # Bump patch version in build.gradle
-    gradle_file = File.expand_path("../../android/app/build.gradle", __dir__)
-    content = File.read(gradle_file)
-    content = content.gsub(/versionName\s+"(\d+)\.(\d+)\.(\d+)"/) do
-      "versionName \"#{$1}.#{$2}.#{$3.to_i + 1}\""
-    end
-    File.write(gradle_file, content)
+${versionBumpSnippet}
 
     gradle(
       task: "bundle",
@@ -52,13 +67,7 @@ package_name(ENV["PACKAGE_NAME"])
 
   desc "Promote internal to production"
   lane :release do
-    # Bump patch version in build.gradle
-    gradle_file = File.expand_path("../../android/app/build.gradle", __dir__)
-    content = File.read(gradle_file)
-    content = content.gsub(/versionName\s+"(\d+)\.(\d+)\.(\d+)"/) do
-      "versionName \"#{$1}.#{$2}.#{$3.to_i + 1}\""
-    end
-    File.write(gradle_file, content)
+${versionBumpSnippet}
 
     gradle(
       task: "bundle",

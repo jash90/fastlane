@@ -83,10 +83,11 @@ export interface IosFlowContext {
   xcodeproj: string | null;
   existingIosEnv: Record<string, string>;
   iosAppfile: Record<string, string>;
+  isExpo?: boolean;
 }
 
 export async function runIosFlow(ctx: IosFlowContext): Promise<void> {
-  const { projectRoot, home, detectedBundleId, xcodeproj, existingIosEnv, iosAppfile } = ctx;
+  const { projectRoot, home, detectedBundleId, xcodeproj, existingIosEnv, iosAppfile, isExpo } = ctx;
 
   const iosConfigured = !!(existingIosEnv.ASC_KEY_ID && existingIosEnv.ASC_KEY_CONTENT_BASE64);
   let reuseIos = false;
@@ -171,6 +172,7 @@ export async function runIosFlow(ctx: IosFlowContext): Promise<void> {
         matchGitUrl: existingIosEnv.MATCH_GIT_URL,
         matchPassword: existingIosEnv.MATCH_PASSWORD,
         xcodeproj: xcodeproj ?? "",
+        isExpo,
       };
 
       await generateIosFiles(projectRoot, iosConfig);
@@ -407,6 +409,7 @@ export async function runIosFlow(ctx: IosFlowContext): Promise<void> {
         matchGitUrl,
         matchPassword,
         xcodeproj: xcodeproj ?? "",
+        isExpo,
       };
 
       await generateIosFiles(projectRoot, iosConfig);

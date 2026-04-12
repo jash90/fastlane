@@ -12,6 +12,17 @@ function readAppJson(projectRoot: string): any | null {
   return null;
 }
 
+export function detectIsExpo(projectRoot: string): boolean {
+  try {
+    const appJsonPath = path.join(projectRoot, "app.json");
+    if (fs.existsSync(appJsonPath)) {
+      const raw = JSON.parse(fs.readFileSync(appJsonPath, "utf8"));
+      return !!raw.expo;
+    }
+  } catch {}
+  return false;
+}
+
 export interface DetectedAndroidInfo {
   packageName: string | null;
   versionCode: string | null;

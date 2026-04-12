@@ -39,9 +39,27 @@ app_identifier([ENV["APP_IDENTIFIER"]])
   const scheme = config.xcodeproj ? config.xcodeproj.replace(".xcodeproj", "") : config.bundleId.split(".").pop();
   const xcodeprojPath = config.xcodeproj ? `ios/${config.xcodeproj}` : "";
 
+  // ── Version bump snippet (Expo vs bare RN) ──────────────────────────
+  const versionBumpSnippet = config.isExpo
+    ? `    # Bump patch version in app.json
+    require "json"
+    app_json_path = File.expand_path("../app.json", __dir__)
+    app_json = JSON.parse(File.read(app_json_path))
+    root = app_json.key?("expo") ? app_json["expo"] : app_json
+    parts = root["version"].split(".")
+    parts[-1] = (parts[-1].to_i + 1).to_s
+    root["version"] = parts.join(".")
+    File.write(app_json_path, JSON.pretty_generate(app_json) + "\\n")
+    UI.message("Version bumped to #{root['version']}")
+    sh("cd .. && npx expo prebuild --clean")`
+    : `    increment_version_number(bump_type: "patch", xcodeproj: "${xcodeprojPath}")
+    increment_build_number(xcodeproj: "${xcodeprojPath}")`;
+
   // Fastfile — merge with existing android platform block
   const fastfilePath = path.join(fastlaneDir, "Fastfile");
   const existingFastfile = fs.existsSync(fastfilePath) ? await fs.readFile(fastfilePath, "utf8") : "";
+
+  const podInstallLine = config.isExpo ? "" : `\n    sh("cd ../ios && pod install")`;
 
   const iosBlock = `platform :ios do
   before_all do
@@ -60,10 +78,8 @@ app_identifier([ENV["APP_IDENTIFIER"]])
 
   desc "Build and upload to TestFlight"
   lane :beta do
-    match(type: "appstore", readonly: is_ci)
-    sh("cd ../ios && pod install")
-    increment_version_number(bump_type: "patch", xcodeproj: "${xcodeprojPath}")
-    increment_build_number(xcodeproj: "${xcodeprojPath}")
+    match(type: "appstore", readonly: is_ci)${podInstallLine}
+${versionBumpSnippet}
     build_app(
       workspace: "ios/${scheme}.xcworkspace",
       scheme: "${scheme}",
@@ -79,10 +95,8 @@ app_identifier([ENV["APP_IDENTIFIER"]])
 
   desc "Build and release to App Store"
   lane :release do
-    match(type: "appstore", readonly: is_ci)
-    sh("cd ../ios && pod install")
-    increment_version_number(bump_type: "patch", xcodeproj: "${xcodeprojPath}")
-    increment_build_number(xcodeproj: "${xcodeprojPath}")
+    match(type: "appstore", readonly: is_ci)${podInstallLine}
+${versionBumpSnippet}
     build_app(
       workspace: "ios/${scheme}.xcworkspace",
       scheme: "${scheme}",
